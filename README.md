@@ -64,9 +64,10 @@ https://your-render-service.onrender.com/mcp
 
 Do not configure Render MCP as a command. A Render URL cannot run `node mcp-server.js` for the client. Use the `/mcp` URL in MCP clients that support remote Streamable HTTP servers.
 
-The MCP server exposes one tool:
+The MCP server exposes two tools:
 
 - `increment_counter`: increments the website counter. Pass `{ "amount": 5 }` to add more than one.
+- `get_counter`: reads the current website counter without changing it.
 
 The website must be running separately with `npm start` before you call the MCP tool.
 

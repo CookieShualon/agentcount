@@ -111,9 +111,11 @@ function createMcpServer() {
             "",
             "Available tools:",
             "- increment_counter: increments the counter shown on the website.",
+            "- get_counter: reads the current counter value without changing it.",
             "",
             "Tool arguments:",
-            "- amount: optional integer. Defaults to 1.",
+            "- increment_counter amount: optional integer. Defaults to 1.",
+            "- get_counter: no arguments.",
             "",
             "Example tool call:",
             '{ "name": "increment_counter", "arguments": { "amount": 1 } }',
@@ -128,6 +130,27 @@ function createMcpServer() {
         }
       ]
     })
+  );
+
+  mcp.registerTool(
+    "get_counter",
+    {
+      title: "Get website counter",
+      description: "Read the current counter value shown on the connected website.",
+      inputSchema: {}
+    },
+    async () => {
+      const currentCounter = await getCounter();
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Counter is ${currentCounter}`
+          }
+        ]
+      };
+    }
   );
 
   mcp.registerTool(
