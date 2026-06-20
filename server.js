@@ -3,13 +3,14 @@ import pg from "pg";
 
 const PORT = Number(process.env.PORT || 3000);
 const DATABASE_URL = process.env.DATABASE_URL;
+const USE_DB_SSL = process.env.DB_SSL === "true" || DATABASE_URL?.includes("sslmode=require");
 
 let counter = 0;
 const clients = new Set();
 const pool = DATABASE_URL
   ? new pg.Pool({
       connectionString: DATABASE_URL,
-      ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined
+      ssl: USE_DB_SSL ? { rejectUnauthorized: false } : undefined
     })
   : null;
 

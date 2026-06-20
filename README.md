@@ -29,6 +29,14 @@ Render service settings:
 - Start command: `npm start`
 - Environment variable: `DATABASE_URL=<your Render Postgres internal database URL>`
 
+Use Render's **Internal Database URL** when the web service and database are in the same region. Do not set `DB_SSL` for the Internal Database URL.
+
+If you use an External Database URL instead, also set:
+
+```text
+DB_SSL=true
+```
+
 On startup, the app automatically creates this table if needed:
 
 ```sql
