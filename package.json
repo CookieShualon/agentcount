@@ -1,0 +1,16 @@
+{
+  "name": "mcp-counter-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "mcp": "node mcp-server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "express": "latest",
+    "pg": "latest",
+    "zod": "latest"
+  }
+}
