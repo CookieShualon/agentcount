@@ -1,5 +1,8 @@
 import express from "express";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import pg from "pg";
+import { z } from "zod";
 
 const PORT = Number(process.env.PORT || 3000);
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -75,6 +78,133 @@ const app = express();
 
 app.use(express.json());
 app.use(express.static("public"));
+
+function createMcpServer() {
+  const mcp = new McpServer({
+    name: "counter-site",
+    version: "1.0.0"
+  });
+
+  mcp.registerResource(
+    "counter-site-docs",
+    "docs://counter-site",
+    {
+      title: "Counter Site MCP Usage",
+      description: "Instructions for using the hosted counter website MCP server.",
+      mimeType: "text/plain"
+    },
+    async (uri) => ({
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "text/plain",
+          text: [
+            "Counter Site Hosted MCP Server",
+            "",
+            "Purpose:",
+            "- This MCP server updates a live counter on the connected website.",
+            "",
+            "Remote connection:",
+            "- Use the Streamable HTTP endpoint at /mcp on the hosted website.",
+            "- For Render, the URL looks like https://your-service.onrender.com/mcp.",
+            "- Do not use a command like node server.js for the hosted Render MCP connection.",
+            "",
+            "Available tools:",
+            "- increment_counter: increments the counter shown on the website.",
+            "",
+            "Tool arguments:",
+            "- amount: optional integer. Defaults to 1.",
+            "",
+            "Example tool call:",
+            '{ "name": "increment_counter", "arguments": { "amount": 1 } }',
+            "",
+            "Expected successful result:",
+            "- Counter updated to 1",
+            "",
+            "Persistence:",
+            "- The website stores the counter in Postgres when DATABASE_URL is set, including Render Postgres.",
+            "- Without DATABASE_URL, the website uses in-memory storage and resets on restart."
+          ].join("\n")
+        }
+      ]
+    })
+  );
+
+  mcp.registerTool(
+    "increment_counter",
+    {
+      title: "Increment website counter",
+      description: "Increment the counter shown on the connected website.",
+      inputSchema: {
+        amount: z.number().int().optional().describe("How much to add. Defaults to 1.")
+      }
+    },
+    async ({ amount = 1 }) => {
+      const nextCounter = await updateCounter(amount);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Counter updated to ${nextCounter}`
+          }
+        ]
+      };
+    }
+  );
+
+  return mcp;
+}
+
+app.options("/mcp", (_req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "content-type, mcp-session-id");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.sendStatus(204);
+});
+
+app.post("/mcp", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
+
+  const mcp = createMcpServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined
+  });
+
+  try {
+    await mcp.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+  } catch (error) {
+    console.error("Error handling MCP request:", error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32603,
+          message: "Internal server error"
+        },
+        id: null
+      });
+    }
+  } finally {
+    res.on("close", () => {
+      transport.close();
+      mcp.close();
+    });
+  }
+});
+
+app.get("/mcp", (_req, res) => {
+  res.status(405).json({
+    jsonrpc: "2.0",
+    error: {
+      code: -32000,
+      message: "Method not allowed. Use POST for MCP Streamable HTTP."
+    },
+    id: null
+  });
+});
 
 app.get("/api/counter", async (_req, res, next) => {
   try {

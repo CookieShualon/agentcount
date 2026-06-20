@@ -50,17 +50,27 @@ It stores the counter in the row where `key = 'counter'`.
 
 ## Connect an MCP client
 
-Use this server command in your MCP client config:
+For local development, use this stdio server command in your MCP client config:
 
 ```sh
 node /Users/omerrechavi/agentcount/mcp-server.js
 ```
+
+For the hosted Render app, use the Streamable HTTP endpoint instead:
+
+```text
+https://your-render-service.onrender.com/mcp
+```
+
+Do not configure Render MCP as a command. A Render URL cannot run `node mcp-server.js` for the client. Use the `/mcp` URL in MCP clients that support remote Streamable HTTP servers.
 
 The MCP server exposes one tool:
 
 - `increment_counter`: increments the website counter. Pass `{ "amount": 5 }` to add more than one.
 
 The website must be running separately with `npm start` before you call the MCP tool.
+
+The hosted web service exposes the MCP server directly at `/mcp`, so no separate MCP process is needed on Render.
 
 ## Test with MCP Inspector
 
